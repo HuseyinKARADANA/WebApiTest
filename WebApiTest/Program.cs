@@ -29,22 +29,6 @@ builder.Services.AddAuthentication(options =>
               options.LoginPath = "/Session/Login"; // Giriþ sayfasýnýn yolunu belirtin
               options.AccessDeniedPath = "/Session/Login"; // Yetkisiz eriþimde yönlendirilecek yol
           });
-//builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
-//{
-//    options.Cookie.Name = "ShopListApp";
-//    options.LoginPath = "/Users/login";//login yapma sayfasý
-//    options.AccessDeniedPath = "/Users/login";//yetkisizse buraya atýyor
-//});
-
-// Autofac container oluþturma
-
-
-//containerBuilder.RegisterType<UserManager>().As<IUserService>().SingleInstance();
-//containerBuilder.RegisterType<EfUserDal>().As<IUserDal>().SingleInstance();
-
-
-// var containerBuilder = new ContainerBuilder();
-//containerBuilder.Populate(builder.Services); // Microsoft DI'dan Autofac'a geçiþ
 
 builder.Services.AddSwaggerGen();
 builder.Services.AddEndpointsApiExplorer(); 
@@ -66,12 +50,7 @@ app.UseCors(builder => builder.WithOrigins("http://localhost:7297").AllowAnyHead
 app.UseAuthentication(); // UseAuthentication metodu düzenlendi
 app.UseAuthorization();
 
-//app.UseEndpoints(endpoints =>
-//{
-//    // Endpoint yapýlandýrmalarýnýzý burada tanýmlayýn
-//    endpoints.MapControllers();
-//});
-//app.UseRouting();//chat gpt ekledi
+
 
 app.MapControllers();
 

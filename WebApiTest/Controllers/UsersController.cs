@@ -54,7 +54,7 @@ namespace WebApiTest.Controllers
 
         [Authorize]
         [HttpPost("logout")]
-        public async void LogOut (User user)
+        public async void LogOut ()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         }
@@ -85,23 +85,33 @@ namespace WebApiTest.Controllers
 
         [AllowAnonymous]
         [HttpPost("register")]
-        public async Task<ActionResult<User>> Register(User user)
+        public async Task<ActionResult<RegisterDTO>> Register(RegisterDTO user)
         {
-            _userService.Insert(new User()
+            _userService.Insert(new User
             {
-                Name = user.Name,
-                Surname = user.Surname,
-                Email = user.Email,
-                Gender = user.Gender,
-                BirthDate = user.BirthDate,
-                PhoneNumber = user.PhoneNumber,
-                RegisterDate = System.DateTime.Now,
-                UserName = user.UserName,
-                Password = user.Password
+                Name=user.Name,
+                Surname=user.Surname,
+                Email=user.Email,
+                Password=user.Password,
+                PhoneNumber=user.PhoneNumber,
+                UserName=user.UserName,
+                Gender=user.Gender,
+                BirthDate=user.BirthDate,   
+                RegisterDate=System.DateTime.Now
             });
 
             return user;
         }
+
+        //[HttpGet("/nav")]
+        //public IActionResult GetNavbarData()
+        //{
+
+        //    return ActionResult();
+
+
+        //}
+
 
         /*[Authorize]
         [HttpPut("{id}")]
