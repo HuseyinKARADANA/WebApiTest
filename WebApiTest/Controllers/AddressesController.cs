@@ -60,7 +60,7 @@ namespace WebApiTest.Controllers
             return address;
         }
 
-        //[Authorize]
+
         [HttpPut("update")]
         public async Task<IActionResult> UpdateAddress(GetAddressDTO dto)
         {
@@ -109,7 +109,7 @@ namespace WebApiTest.Controllers
             return address;
         }
 
-        //[Authorize]
+       // [Authorize]
         [HttpDelete("delete")]
         public async Task<IActionResult> DeleteAddress(int addressID)
         {
@@ -121,7 +121,7 @@ namespace WebApiTest.Controllers
 
             _addressService.Delete(address);
 
-            return Ok("Address deleted successfully");
+            return Ok("User deleted successfully");
         }
 
         

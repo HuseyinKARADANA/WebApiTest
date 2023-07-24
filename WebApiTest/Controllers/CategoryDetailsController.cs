@@ -30,8 +30,9 @@ namespace WebApiTest.Controllers
 
             List<GetCategoryDetailDTO> categoryDetailDTOs = categoryDetails.Select(category => new GetCategoryDetailDTO
             {
+                Id = category.Id,
                 SubCategoryId = category.SubCategoryId,
-                CategoryId  = category.CategoryId,
+                CategoryId = category.CategoryId,
                 Name = category.Name
             }).ToList();
 
@@ -39,10 +40,24 @@ namespace WebApiTest.Controllers
         }
 
         //[Authorize]
-        [HttpGet("get")]
+        [HttpGet("getByName/{name:alpha}")]
         public CategoryDetail GetCategoryDetail(string name)
         {
             var categoryDetail = _categoryDetailService.GetCategoryDetailByName(name);
+
+            if (categoryDetail == null)
+            {
+                throw new Exception("NotFound");
+            }
+
+            return categoryDetail;
+        }
+
+        //[Authorize]
+        [HttpGet("getById/{id:int}")]
+        public CategoryDetail GetCategoryDetail(int id)
+        {
+            var categoryDetail = _categoryDetailService.GetElementById(id);
 
             if (categoryDetail == null)
             {
@@ -81,7 +96,7 @@ namespace WebApiTest.Controllers
 
         //[Authorize]
         [HttpPost("addcategorydetail")]
-        public async Task<ActionResult<GetCategoryDetailDTO>> AddCategoryDetail(GetCategoryDetailDTO categoryDetail)
+        public async Task<ActionResult<AddCategoryDetailDTO>> AddCategoryDetail(AddCategoryDetailDTO categoryDetail)
         {
             _categoryDetailService.Insert(new CategoryDetail()
             {
@@ -94,10 +109,10 @@ namespace WebApiTest.Controllers
         }
 
         //[Authorize]
-        [HttpDelete("delete")]
-        public async Task<IActionResult> DeleteCategoryDetail(string categoryDetailName)
+        [HttpDelete("deleteByName/{name:alpha}")]
+        public async Task<IActionResult> DeleteCategoryDetail(string name)
         {
-            var categoryDetail = _categoryDetailService.GetCategoryDetailByName(categoryDetailName);
+            var categoryDetail = _categoryDetailService.GetCategoryDetailByName(name);
             if (categoryDetail == null)
             {
                 return NotFound();
@@ -108,9 +123,30 @@ namespace WebApiTest.Controllers
             return Ok("Category Detail deleted successfully");
         }
 
+        //[Authorize]
+        [HttpDelete("deleteById/{id:int}")]
+        public async Task<IActionResult> DeleteCategoryDetail(int id)
+        {
+            var categoryDetail = _categoryDetailService.GetElementById(id);
+            if (categoryDetail == null)
+            {
+                return NotFound();
+            }
+
+            _categoryDetailService.Delete(categoryDetail);
+
+            return Ok("Category Detail deleted successfully");
+        }
         private bool CategoryDetailExists(string name)
         {
             var categoryDetail = _categoryDetailService.GetCategoryDetailByName(name);
+
+            return categoryDetail != null;
+        }
+
+        private bool CategoryDetailExists(int id)
+        {
+            var categoryDetail = _categoryDetailService.GetElementById(id);
 
             return categoryDetail != null;
         }

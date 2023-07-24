@@ -11,7 +11,7 @@ namespace WebApiTest.Extensions
 {
     public static class ServicesExtensions
     {
-        public static void ConfigureSqlContext(this IServiceCollection services,IConfiguration configuration)
+        public static void ConfigureSqlContext(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddDbContext<AppDbContext>(options =>
             {
@@ -50,7 +50,7 @@ namespace WebApiTest.Extensions
 
         public static void ConfigureCategoryDal(this IServiceCollection services)
         {
-            services.AddScoped<ICategoryDal,EfCategoryDal>();
+            services.AddScoped<ICategoryDal, EfCategoryDal>();
         }
 
         //SubCategory Dependency Injection
@@ -76,6 +76,5 @@ namespace WebApiTest.Extensions
         {
             services.AddScoped<ICategoryDetailDal, EfCategoryDetailDal>();
         }
-
     }
 }

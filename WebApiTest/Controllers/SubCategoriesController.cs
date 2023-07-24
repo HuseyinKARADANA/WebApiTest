@@ -30,6 +30,7 @@ namespace WebApiTest.Controllers
 
             List<GetSubCategoryDTO> subCategoryDTOs = subCategories.Select(subCategory => new GetSubCategoryDTO
             {
+                Id = subCategory.Id,
                 CategoryId = subCategory.CategoryId,
                 Name = subCategory.Name
             }).ToList();
@@ -38,12 +39,26 @@ namespace WebApiTest.Controllers
         }
 
         //[Authorize]
-        [HttpGet("get")]
+        [HttpGet("getByName/{name:alpha}")]
         public SubCategory GetSubCategory(string name)
         {
             var subCategory = _subCategoryService.GetSubCategoryByName(name);
 
             if (subCategory == null)
+            {
+                throw new Exception("NotFound");
+            }
+
+            return subCategory;
+        }
+
+        //[Authorize]
+        [HttpGet("getById/{id:int}")]
+        public SubCategory GetSubCategory(int id)
+        {
+            var subCategory = _subCategoryService.GetElementById(id);
+
+            if (subCategory == null)    
             {
                 throw new Exception("NotFound");
             }
@@ -79,7 +94,7 @@ namespace WebApiTest.Controllers
 
         //[Authorize]
         [HttpPost("addsubcategory")]
-        public async Task<ActionResult<GetSubCategoryDTO>> AddSubCategory(GetSubCategoryDTO subCategory)
+        public async Task<ActionResult<AddSubCategoryDTO>> AddSubCategory(AddSubCategoryDTO subCategory)
         {
             _subCategoryService.Insert(new SubCategory()
             {
@@ -91,10 +106,10 @@ namespace WebApiTest.Controllers
         }
 
         //[Authorize]
-        [HttpDelete("delete")]
-        public async Task<IActionResult> DeleteSubCategory(string subCategoryName)
+        [HttpDelete("deleteByName/{name:alpha}")]
+        public async Task<IActionResult> DeleteSubCategory(string name)
         {
-            var subCategory = _subCategoryService.GetSubCategoryByName(subCategoryName);
+            var subCategory = _subCategoryService.GetSubCategoryByName(name);
             if (subCategory == null)
             {
                 return NotFound();
@@ -105,9 +120,30 @@ namespace WebApiTest.Controllers
             return Ok("Sub Category deleted successfully");
         }
 
+        //[Authorize]
+        [HttpDelete("deleteById/{id:int}")]
+        public async Task<IActionResult> DeleteSubCategory(int id)
+        {
+            var subCategory = _subCategoryService.GetElementById(id);
+            if (subCategory == null)
+            {
+                return NotFound();
+            }
+
+            _subCategoryService.Delete(subCategory);
+
+            return Ok("Sub Category deleted successfully");
+        }
         private bool SubCategoryExists(string name)
         {
             var subCategory = _subCategoryService.GetSubCategoryByName(name);
+
+            return subCategory != null;
+        }
+
+        private bool SubCategoryExists(int id)
+        {
+            var subCategory = _subCategoryService.GetElementById(id);
 
             return subCategory != null;
         }

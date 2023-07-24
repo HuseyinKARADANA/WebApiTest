@@ -11,7 +11,6 @@ using WebApiTest.Extensions;
 using Autofac.Core;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.DotNet.Scaffolding.Shared.ProjectModel;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,6 +38,7 @@ builder.Services.ConfigureSubCategoryDal();
 //CategoryDetail dependency injection
 builder.Services.ConfigureCategoryDetailManager();
 builder.Services.ConfigureCategoryDetailDal();
+
 
 //builder.Services.AddAuthentication(options =>
 //{
