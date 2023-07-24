@@ -11,6 +11,7 @@ using WebApiTest.Extensions;
 using Autofac.Core;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.DotNet.Scaffolding.Shared.ProjectModel;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,10 +19,26 @@ builder.Services.AddControllers();
 
 
 builder.Services.ConfigureSqlContext(builder.Configuration);
+
+//User dependency injection
 builder.Services.ConfigureUserManager();
 builder.Services.ConfigureGenericDal();
+
+//Address dependency injection
 builder.Services.ConfigureAddressManager();
 builder.Services.ConfigureAddressDal();
+
+//Category dependency injection
+builder.Services.ConfigureCategoryManager();
+builder.Services.ConfigureCategoryDal();
+
+//SubCategory dependency injection
+builder.Services.ConfigureSubCategoryManager();
+builder.Services.ConfigureSubCategoryDal();
+
+//CategoryDetail dependency injection
+builder.Services.ConfigureCategoryDetailManager();
+builder.Services.ConfigureCategoryDetailDal();
 
 //builder.Services.AddAuthentication(options =>
 //{

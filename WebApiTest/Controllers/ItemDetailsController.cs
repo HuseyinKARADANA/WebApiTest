@@ -5,7 +5,6 @@
 //using Microsoft.AspNetCore.Http;
 //using Microsoft.AspNetCore.Mvc;
 //using Microsoft.EntityFrameworkCore;
-//using WebApiTest.Models;
 
 //namespace WebApiTest.Controllers
 //{
@@ -24,10 +23,10 @@
 //        [HttpGet]
 //        public async Task<ActionResult<IEnumerable<ItemDetail>>> GetItemDetails()
 //        {
-//          if (_context.ItemDetails == null)
-//          {
-//              return NotFound();
-//          }
+//            if (_context.ItemDetails == null)
+//            {
+//                return NotFound();
+//            }
 //            return await _context.ItemDetails.ToListAsync();
 //        }
 
@@ -35,10 +34,10 @@
 //        [HttpGet("{id}")]
 //        public async Task<ActionResult<ItemDetail>> GetItemDetail(int id)
 //        {
-//          if (_context.ItemDetails == null)
-//          {
-//              return NotFound();
-//          }
+//            if (_context.ItemDetails == null)
+//            {
+//                return NotFound();
+//            }
 //            var itemDetail = await _context.ItemDetails.FindAsync(id);
 
 //            if (itemDetail == null)
@@ -85,10 +84,10 @@
 //        [HttpPost]
 //        public async Task<ActionResult<ItemDetail>> PostItemDetail(ItemDetail itemDetail)
 //        {
-//          if (_context.ItemDetails == null)
-//          {
-//              return Problem("Entity set 'AppDbContext.ItemDetails'  is null.");
-//          }
+//            if (_context.ItemDetails == null)
+//            {
+//                return Problem("Entity set 'AppDbContext.ItemDetails'  is null.");
+//            }
 //            _context.ItemDetails.Add(itemDetail);
 //            await _context.SaveChangesAsync();
 

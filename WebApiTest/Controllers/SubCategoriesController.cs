@@ -1,123 +1,115 @@
-﻿//using System;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Threading.Tasks;
-//using Microsoft.AspNetCore.Http;
-//using Microsoft.AspNetCore.Mvc;
-//using Microsoft.EntityFrameworkCore;
-//using WebApiTest.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using EntityLayer.DTOs;
+using EntityLayer.Concrete;
+using BusinessLayer.Abstract;
 
-//namespace WebApiTest.Controllers
-//{
-//    [Route("api/[controller]")]
-//    [ApiController]
-//    public class SubCategoriesController : ControllerBase
-//    {
-//        private readonly AppDbContext _context;
+namespace WebApiTest.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class SubCategoriesController : ControllerBase
+    {
+        private readonly ISubCategoryService _subCategoryService;
 
-//        public SubCategoriesController(AppDbContext context)
-//        {
-//            _context = context;
-//        }
+        public SubCategoriesController(ISubCategoryService subCategoryService)
+        {
+            _subCategoryService = subCategoryService;
+        }
 
-//        // GET: api/SubCategories
-//        [HttpGet]
-//        public async Task<ActionResult<IEnumerable<SubCategory>>> GetSubCategories()
-//        {
-//          if (_context.SubCategories == null)
-//          {
-//              return NotFound();
-//          }
-//            return await _context.SubCategories.ToListAsync();
-//        }
+        //[Authorize]
+        [HttpGet]
+        public List<GetSubCategoryDTO> GetAllSubCategories()
+        {
+            List<SubCategory> subCategories = _subCategoryService.GetListAll();
 
-//        // GET: api/SubCategories/5
-//        [HttpGet("{id}")]
-//        public async Task<ActionResult<SubCategory>> GetSubCategory(int id)
-//        {
-//          if (_context.SubCategories == null)
-//          {
-//              return NotFound();
-//          }
-//            var subCategory = await _context.SubCategories.FindAsync(id);
+            List<GetSubCategoryDTO> subCategoryDTOs = subCategories.Select(subCategory => new GetSubCategoryDTO
+            {
+                CategoryId = subCategory.CategoryId,
+                Name = subCategory.Name
+            }).ToList();
 
-//            if (subCategory == null)
-//            {
-//                return NotFound();
-//            }
+            return subCategoryDTOs;
+        }
 
-//            return subCategory;
-//        }
+        //[Authorize]
+        [HttpGet("get")]
+        public SubCategory GetSubCategory(string name)
+        {
+            var subCategory = _subCategoryService.GetSubCategoryByName(name);
 
-//        // PUT: api/SubCategories/5
-//        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-//        [HttpPut("{id}")]
-//        public async Task<IActionResult> PutSubCategory(int id, SubCategory subCategory)
-//        {
-//            if (id != subCategory.Id)
-//            {
-//                return BadRequest();
-//            }
+            if (subCategory == null)
+            {
+                throw new Exception("NotFound");
+            }
 
-//            _context.Entry(subCategory).State = EntityState.Modified;
+            return subCategory;
+        }
 
-//            try
-//            {
-//                await _context.SaveChangesAsync();
-//            }
-//            catch (DbUpdateConcurrencyException)
-//            {
-//                if (!SubCategoryExists(id))
-//                {
-//                    return NotFound();
-//                }
-//                else
-//                {
-//                    throw;
-//                }
-//            }
+        //[Authorize]
+        [HttpPut("update")]
+        public async Task<IActionResult> UpdateSubCategory(GetSubCategoryDTO dto)
+        {
 
-//            return NoContent();
-//        }
+            if (ModelState.IsValid)
+            {
+                var subCategoryToUpdate = _subCategoryService.GetSubCategoryByName(dto.Name);
+                if (subCategoryToUpdate == null)
+                {
+                    return NotFound();
+                }
 
-//        // POST: api/SubCategories
-//        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-//        [HttpPost]
-//        public async Task<ActionResult<SubCategory>> PostSubCategory(SubCategory subCategory)
-//        {
-//          if (_context.SubCategories == null)
-//          {
-//              return Problem("Entity set 'AppDbContext.SubCategories'  is null.");
-//          }
-//            _context.SubCategories.Add(subCategory);
-//            await _context.SaveChangesAsync();
+                subCategoryToUpdate.CategoryId = dto.CategoryId;
+                subCategoryToUpdate.Name = dto.Name;
 
-//            return CreatedAtAction("GetSubCategory", new { id = subCategory.Id }, subCategory);
-//        }
+                _subCategoryService.Update(subCategoryToUpdate);
 
-//        // DELETE: api/SubCategories/5
-//        [HttpDelete("{id}")]
-//        public async Task<IActionResult> DeleteSubCategory(int id)
-//        {
-//            if (_context.SubCategories == null)
-//            {
-//                return NotFound();
-//            }
-//            var subCategory = await _context.SubCategories.FindAsync(id);
-//            if (subCategory == null)
-//            {
-//                return NotFound();
-//            }
+                return Ok("Sub Category successfully updated");
+            }
+            else
+            {
+                return BadRequest("Invalid data provided.");
+            }
+        }
 
-//            _context.SubCategories.Remove(subCategory);
-//            await _context.SaveChangesAsync();
+        //[Authorize]
+        [HttpPost("addsubcategory")]
+        public async Task<ActionResult<GetSubCategoryDTO>> AddSubCategory(GetSubCategoryDTO subCategory)
+        {
+            _subCategoryService.Insert(new SubCategory()
+            {
+                CategoryId = subCategory.CategoryId,
+                Name = subCategory.Name
+            });
 
-//            return NoContent();
-//        }
+            return subCategory;
+        }
 
-//        private bool SubCategoryExists(int id)
-//        {
-//            return (_context.SubCategories?.Any(e => e.Id == id)).GetValueOrDefault();
-//        }
-//    }
-//}
+        //[Authorize]
+        [HttpDelete("delete")]
+        public async Task<IActionResult> DeleteSubCategory(string subCategoryName)
+        {
+            var subCategory = _subCategoryService.GetSubCategoryByName(subCategoryName);
+            if (subCategory == null)
+            {
+                return NotFound();
+            }
+
+            _subCategoryService.Delete(subCategory);
+
+            return Ok("Sub Category deleted successfully");
+        }
+
+        private bool SubCategoryExists(string name)
+        {
+            var subCategory = _subCategoryService.GetSubCategoryByName(name);
+
+            return subCategory != null;
+        }
+    }
+}

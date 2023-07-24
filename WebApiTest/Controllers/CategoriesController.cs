@@ -1,123 +1,114 @@
-﻿//using System;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Threading.Tasks;
-//using Microsoft.AspNetCore.Http;
-//using Microsoft.AspNetCore.Mvc;
-//using Microsoft.EntityFrameworkCore;
-//using WebApiTest.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Threading.Tasks;
+using BusinessLayer.Abstract;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using EntityLayer.DTOs;
+using EntityLayer.Concrete;
 
-//namespace WebApiTest.Controllers
-//{
-//    [Route("api/[controller]")]
-//    [ApiController]
-//    public class CategoriesController : ControllerBase
-//    {
-//        private readonly AppDbContext _context;
+namespace WebApiTest.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class CategoriesController : ControllerBase
+    {
+        private readonly ICategoryService _categoryService;
 
-//        public CategoriesController(AppDbContext context)
-//        {
-//            _context = context;
-//        }
+        public CategoriesController(ICategoryService categoryService)
+        {
+            _categoryService = categoryService;
+        }
 
-//        // GET: api/Categories
-//        [HttpGet]
-//        public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
-//        {
-//          if (_context.Categories == null)
-//          {
-//              return NotFound();
-//          }
-//            return await _context.Categories.ToListAsync();
-//        }
+        //[Authorize]
+        [HttpGet]
+        public List<GetCategoryDTO> GetAllCategories()
+        {
+            List<Category> categories = _categoryService.GetListAll();
 
-//        // GET: api/Categories/5
-//        [HttpGet("{id}")]
-//        public async Task<ActionResult<Category>> GetCategory(int id)
-//        {
-//          if (_context.Categories == null)
-//          {
-//              return NotFound();
-//          }
-//            var category = await _context.Categories.FindAsync(id);
+            List<GetCategoryDTO> categoryDTOs = categories.Select(category => new GetCategoryDTO
+            {
+                Name = category.Name
+            }).ToList();
 
-//            if (category == null)
-//            {
-//                return NotFound();
-//            }
+            return categoryDTOs;
+        }
 
-//            return category;
-//        }
+        //[Authorize]
+        [HttpGet("get")]
+        public Category GetCategory(string name)
+        {
+            var category = _categoryService.GetCategoryByName(name);
 
-//        // PUT: api/Categories/5
-//        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-//        [HttpPut("{id}")]
-//        public async Task<IActionResult> PutCategory(int id, Category category)
-//        {
-//            if (id != category.Id)
-//            {
-//                return BadRequest();
-//            }
+            if (category == null)
+            {
+                throw new Exception("NotFound");
+            }
 
-//            _context.Entry(category).State = EntityState.Modified;
+            return category;
+        }
 
-//            try
-//            {
-//                await _context.SaveChangesAsync();
-//            }
-//            catch (DbUpdateConcurrencyException)
-//            {
-//                if (!CategoryExists(id))
-//                {
-//                    return NotFound();
-//                }
-//                else
-//                {
-//                    throw;
-//                }
-//            }
+        //[Authorize]
+        [HttpPut("update")]
+        public async Task<IActionResult> UpdateCategory(GetCategoryDTO dto)
+        {
 
-//            return NoContent();
-//        }
+            if (ModelState.IsValid)
+            {
+                var categoryToUpdate = _categoryService.GetCategoryByName(dto.Name);
+                if (categoryToUpdate == null)
+                {
+                    return NotFound();
+                }
 
-//        // POST: api/Categories
-//        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-//        [HttpPost]
-//        public async Task<ActionResult<Category>> PostCategory(Category category)
-//        {
-//          if (_context.Categories == null)
-//          {
-//              return Problem("Entity set 'AppDbContext.Categories'  is null.");
-//          }
-//            _context.Categories.Add(category);
-//            await _context.SaveChangesAsync();
+                categoryToUpdate.Name = dto.Name;
 
-//            return CreatedAtAction("GetCategory", new { id = category.Id }, category);
-//        }
+                _categoryService.Update(categoryToUpdate);
 
-//        // DELETE: api/Categories/5
-//        [HttpDelete("{id}")]
-//        public async Task<IActionResult> DeleteCategory(int id)
-//        {
-//            if (_context.Categories == null)
-//            {
-//                return NotFound();
-//            }
-//            var category = await _context.Categories.FindAsync(id);
-//            if (category == null)
-//            {
-//                return NotFound();
-//            }
+                return Ok("Category successfully updated");
+            }
+            else
+            {
+                return BadRequest("Invalid data provided.");
+            }
+        }
 
-//            _context.Categories.Remove(category);
-//            await _context.SaveChangesAsync();
+        //[Authorize]
+        [HttpPost("addcategory")]
+        public async Task<ActionResult<GetCategoryDTO>> AddCategory(GetCategoryDTO category)
+        {
+            _categoryService.Insert(new Category()
+            {
+                Name= category.Name
+            });
 
-//            return NoContent();
-//        }
+            return category;
+        }
 
-//        private bool CategoryExists(int id)
-//        {
-//            return (_context.Categories?.Any(e => e.Id == id)).GetValueOrDefault();
-//        }
-//    }
-//}
+        //[Authorize]
+        [HttpDelete("delete")]
+        public async Task<IActionResult> DeleteCategory(string categoryName)
+        {
+            var category = _categoryService.GetCategoryByName(categoryName);
+            if (category == null)
+            {
+                return NotFound();
+            }
+
+            _categoryService.Delete(category);
+
+            return Ok("Category deleted successfully");
+        }
+
+        private bool CategoryExists(string name)
+        {
+            var category = _categoryService.GetCategoryByName(name);
+
+            return category != null;
+        }
+    }
+}
