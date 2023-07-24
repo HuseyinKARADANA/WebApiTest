@@ -1,123 +1,129 @@
-﻿//using System;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Threading.Tasks;
-//using Microsoft.AspNetCore.Http;
-//using Microsoft.AspNetCore.Mvc;
-//using Microsoft.EntityFrameworkCore;
-//using WebApiTest.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using BusinessLayer.Abstract;
+using EntityLayer.Concrete;
+using EntityLayer.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using EntityLayer.DTOs;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 
-//namespace WebApiTest.Controllers
-//{
-//    [Route("api/[controller]")]
-//    [ApiController]
-//    public class AddressesController : ControllerBase
-//    {
-//        private readonly AppDbContext _context;
+namespace WebApiTest.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class AddressesController : ControllerBase
+    {
+        private readonly IAddressService _addressService;
 
-//        public AddressesController(AppDbContext context)
-//        {
-//            _context = context;
-//        }
+        public AddressesController(IAddressService addressService)
+        {
+            _addressService = addressService;
+        }
 
-//        // GET: api/Addresses
-//        [HttpGet]
-//        public async Task<ActionResult<IEnumerable<Address>>> GetAddresses()
-//        {
-//            if (_context.Addresses == null)
-//            {
-//                return NotFound();
-//            }
-//            return await _context.Addresses.ToListAsync();
-//        }
+       // [Authorize]
+        [HttpGet]
+        public List<GetAddressDTO> GetAllAddresses()
+        {
+            List<Address> addresses = _addressService.GetListAll();
 
-//        // GET: api/Addresses/5
-//        [HttpGet("{id}")]
-//        public async Task<ActionResult<Address>> GetAddress(int id)
-//        {
-//            if (_context.Addresses == null)
-//            {
-//                return NotFound();
-//            }
-//            var address = await _context.Addresses.FindAsync(id);
+            List<GetAddressDTO> addressDTOs = addresses.Select(address => new GetAddressDTO
+            {
+                Id = address.Id,
+                AddressName = address.AddressName,
+                CountryName = address.CountryName,
+                CityName = address.CityName,
+                TownName = address.TownName,
+                DistrictName = address.DistrictName,
+                PostCode = address.PostCode,
+                AddressText = address.AddressText
+            }).ToList();
 
-//            if (address == null)
-//            {
-//                return NotFound();
-//            }
+            return addressDTOs;
+        }
 
-//            return address;
-//        }
+        //[Authorize]
+        [HttpGet("get")]
+        public Address GetAddress( int id)
+        {
+            var address = _addressService.GetElementById(id);
 
-//        // PUT: api/Addresses/5
-//        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-//        [HttpPut("{id}")]
-//        public async Task<IActionResult> PutAddress(int id, Address address)
-//        {
-//            if (id != address.Id)
-//            {
-//                return BadRequest();
-//            }
+            if (address == null)
+            {
+                throw new Exception("NotFound");
+            }
 
-//            _context.Entry(address).State = EntityState.Modified;
+            return address;
+        }
 
-//            try
-//            {
-//                await _context.SaveChangesAsync();
-//            }
-//            catch (DbUpdateConcurrencyException)
-//            {
-//                if (!AddressExists(id))
-//                {
-//                    return NotFound();
-//                }
-//                else
-//                {
-//                    throw;
-//                }
-//            }
 
-//            return NoContent();
-//        }
+        [HttpPut("update")]
+        public async Task<IActionResult> UpdateAddress(GetAddressDTO dto)
+        {
 
-//        // POST: api/Addresses
-//        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-//        [HttpPost]
-//        public async Task<ActionResult<Address>> PostAddress(Address address)
-//        {
-//            if (_context.Addresses == null)
-//            {
-//                return Problem("Entity set 'AppDbContext.Addresses'  is null.");
-//            }
-//            _context.Addresses.Add(address);
-//            await _context.SaveChangesAsync();
+            if (ModelState.IsValid)
+            {
+                var addressToUpdate = _addressService.GetElementById(dto.Id);
+                if (addressToUpdate == null)
+                {
+                    return NotFound();
+                }
 
-//            return CreatedAtAction("GetAddress", new { id = address.Id }, address);
-//        }
+                addressToUpdate.AddressName = dto.AddressName;
+                addressToUpdate.CountryName = dto.CountryName;
+                addressToUpdate.CityName = dto.CityName;
+                addressToUpdate.TownName = dto.TownName;
+                addressToUpdate.DistrictName = dto.DistrictName;
+                addressToUpdate.PostCode = dto.PostCode;
+                addressToUpdate.AddressText = dto.AddressText;
 
-//        // DELETE: api/Addresses/5
-//        [HttpDelete("{id}")]
-//        public async Task<IActionResult> DeleteAddress(int id)
-//        {
-//            if (_context.Addresses == null)
-//            {
-//                return NotFound();
-//            }
-//            var address = await _context.Addresses.FindAsync(id);
-//            if (address == null)
-//            {
-//                return NotFound();
-//            }
+                _addressService.Update(addressToUpdate);
 
-//            _context.Addresses.Remove(address);
-//            await _context.SaveChangesAsync();
+                return Ok("Address successfully updated");
+            }
+            else
+            {
+                return BadRequest("Invalid data provided.");
+            }
+        }
 
-//            return NoContent();
-//        }
+        //[Authorize]
+        [HttpPost("addaddress")]
+        public async Task<ActionResult<DefaultAddressDTO>> AddAddress(DefaultAddressDTO address)
+        {
+            _addressService.Insert(new Address()
+            {
+                AddressName = address.AddressName,
+                CountryName = address.CountryName,
+                CityName = address.CityName,
+                TownName = address.TownName,
+                DistrictName = address.DistrictName,
+                PostCode = address.PostCode,
+                AddressText = address.AddressText,
+            });
 
-//        private bool AddressExists(int id)
-//        {
-//            return (_context.Addresses?.Any(e => e.Id == id)).GetValueOrDefault();
-//        }
-//    }
-//}
+            return address;
+        }
+
+       // [Authorize]
+        [HttpDelete("delete")]
+        public async Task<IActionResult> DeleteAddress(int addressID)
+        {
+            var address = _addressService.GetElementById(addressID);
+            if (address == null)
+            {
+                return NotFound();
+            }
+
+            _addressService.Delete(address);
+
+            return Ok("User deleted successfully");
+        }
+
+        
+    }
+}

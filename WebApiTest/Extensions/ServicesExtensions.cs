@@ -28,5 +28,15 @@ namespace WebApiTest.Extensions
         {
             services.AddScoped<IUserDal, EfUserDal>();
         }
+
+        public static void ConfigureAddressManager(this IServiceCollection services)
+        {
+            services.AddScoped<IAddressService, AddressManager>();
+        }
+
+        public static void ConfigureAddressDal(this IServiceCollection services)
+        {
+            services.AddScoped<IAddressDal, EfAddressDal>();
+        }
     }
 }

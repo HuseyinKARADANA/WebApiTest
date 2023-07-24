@@ -14,6 +14,11 @@ using Microsoft.EntityFrameworkCore;
 using BusinessLayer.Abstract;
 using EntityLayer.Concrete;
 using EntityLayer.DTOs;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using Humanizer;
+using System.Security.Cryptography;
 
 namespace WebApiTest.Controllers
 {
@@ -23,11 +28,13 @@ namespace WebApiTest.Controllers
     {
         private readonly ILogger<UsersController> _logger;//loglama yaptık
         private readonly IUserService _userService;
+        private readonly IConfiguration _configuration; //configuraiton eklendi 
 
-        public UsersController(IUserService userService, ILogger<UsersController> logger)
+        public UsersController(IUserService userService, ILogger<UsersController> logger, IConfiguration configuration)
         {
             _userService = userService;
             _logger = logger;
+            _configuration = configuration;
 
         }
 
@@ -53,133 +60,181 @@ namespace WebApiTest.Controllers
         }
 
         [Authorize]
-        [HttpPost("logout")]
-        public async void LogOut ()
+        [HttpGet("logout")]
+        public async Task<IActionResult> LogOut ()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            HttpContext.Response.Cookies.Delete("access_token");
+            //await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Ok("Signed out successfully");
         }
 
         [AllowAnonymous]
         [HttpPost("login")]
-        public async Task<ActionResult<LoginDTO>> Login(LoginDTO dto)
+        public async Task<ActionResult> Login(LoginDTO dto)
         {
-            var user = _userService.Login(dto.Email,dto.Password);
-
-            if (user == false)
+            if(_userService.Login(dto.Email,dto.Password))
             {
-                throw new Exception("NotFound");
+                var token = GenerateAccessToken(dto);
+
+                // Set the access token as a cookie in the response
+                HttpContext.Response.Cookies.Append("access_token", token, new CookieOptions
+                {
+                    Expires = DateTimeOffset.UtcNow.AddHours(3),
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict
+                });
+
+                return Ok(new { message = "Login successful." });
             }
 
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, dto.Email.ToString()),
-                new Claim(ClaimTypes.Role, "User")
-            };
+            //var claims = new List<Claim>
+            //{
+            //    new Claim(ClaimTypes.Name, dto.ToString()),
+            //    new Claim(ClaimTypes.Role, "User")
+            //};
 
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var authProperties = new AuthenticationProperties();
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), authProperties);
+            //var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            //var authProperties = new AuthenticationProperties();
+            //await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), authProperties);
 
-            return dto;
+            //return dto;
+
+            return NotFound();
         }
+
+        [NonAction]
+        private static string Generate128BitKey()
+        {
+            // Generate 16 bytes (128 bits) of random data
+            byte[] randomBytes = new byte[16];
+
+            using (var rng = new RNGCryptoServiceProvider())
+            {
+                rng.GetBytes(randomBytes);
+            }
+
+            // Convert the random bytes to a hexadecimal string
+            string hexKey = BitConverter.ToString(randomBytes).Replace("-", "").ToLower();
+
+            return hexKey;
+        }
+ 
+
+        [NonAction]
+        private string GenerateAccessToken(LoginDTO dto)
+        {
+            // Replace this with your actual token generation login
+            string coded = Generate128BitKey();
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(coded));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var claims = new[]
+            {
+            new Claim(ClaimTypes.Name, dto.ToString()),
+            new Claim(ClaimTypes.Role, "User")
+        };
+
+            var token = new JwtSecurityToken(
+                _configuration["Jwt:Issuer"],
+                _configuration["Jwt:Audience"],
+                claims,
+                expires: DateTime.Now.AddMinutes(30),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        //[HttpGet("ValidateLogin")]
+        //public bool ValidateLogin(string token)
+        //{
+        //    var signinKey = Generate128BitKey();
+        //    var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signinKey));
+        //    try
+        //    {
+        //        JwtSecurityTokenHandler handler = new();
+        //        handler.ValidateToken(token, new TokenValidationParameters()
+        //        {
+        //            ValidateIssuerSigningKey = true,
+        //            IssuerSigningKey = securityKey,
+        //            ValidateLifetime = true,
+        //            ValidateAudience = false,
+        //            ValidateIssuer = false,
+        //        }, out SecurityToken validatedToken);
+        //        var jwtToken = (JwtSecurityToken)validatedToken;
+        //        var claims = jwtToken.Claims.ToList();
+        //        return true;
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return false;
+        //    }
+        //}
 
         [AllowAnonymous]
         [HttpPost("register")]
         public async Task<ActionResult<RegisterDTO>> Register(RegisterDTO user)
         {
-            _userService.Insert(new User
+            _userService.Insert(new User()
             {
-                Name=user.Name,
-                Surname=user.Surname,
-                Email=user.Email,
-                Password=user.Password,
-                PhoneNumber=user.PhoneNumber,
-                UserName=user.UserName,
-                Gender=user.Gender,
-                BirthDate=user.BirthDate,   
-                RegisterDate=System.DateTime.Now
+                Name = user.Name,
+                Surname = user.Surname,
+                Email = user.Email,
+                Gender = user.Gender,
+                BirthDate = user.BirthDate,
+                PhoneNumber = user.PhoneNumber,
+                RegisterDate = System.DateTime.Now,
+                UserName = user.UserName,
+                Password = user.Password
             });
 
             return user;
         }
 
-        //[HttpGet("/nav")]
-        //public IActionResult GetNavbarData()
-        //{
-
-        //    return ActionResult();
-
-
-        //}
-
-
-        /*[Authorize]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(int id, User user)
-        {
-            if (id != user.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(user).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
         [Authorize]
-        [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        [HttpDelete("delete")]
+        public async Task<IActionResult> DeleteUser(string username)
         {
-          if (_context.Users == null)
-          {
-              return Problem("Entity set 'UserContext.Users'  is null.");
-          }
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
-        }
-
-        [Authorize]
-        [HttpDelete("delete/{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
-        {
-            if (_context.Users == null)
-            {
-                return NotFound();
-            }
-            var user = await _context.Users.FindAsync(id);
+            var user = _userService.GetElementByUsername(username);
             if (user == null)
             {
                 return NotFound();
             }
 
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
+            _userService.Delete(user);
 
-            return NoContent();
+            return Ok("User deleted successfully");
         }
 
-        private bool UserExists(int id)
-        {
-            return (_context.Users?.Any(e => e.Id == id)).GetValueOrDefault();
-        }*/
+        //[Authorize]
+        //[HttpPut("{id}")]
+        //public async Task<IActionResult> PutUser(int id, User user)
+        //{
+        //    if (id != user.Id)
+        //    {
+        //        return BadRequest();
+        //    }
+
+        //    _context.Entry(user).State = EntityState.Modified;
+        //    try
+        //    {
+        //        await _context.SaveChangesAsync();
+        //    }
+        //    catch (DbUpdateConcurrencyException)
+        //    {
+        //        if (!UserExists(id))
+        //        {
+        //            return NotFound();
+        //        }
+        //        else
+        //        {
+        //            throw;
+        //        }
+        //    }
+
+        //    return NoContent();
+        //}
+        
     }
 }
