@@ -22,7 +22,6 @@ namespace WebApiTest.Controllers
             _subCategoryService = subCategoryService;
         }
 
-        //[Authorize]
         [HttpGet]
         public List<GetSubCategoryDTO> GetAllSubCategories()
         {
@@ -38,7 +37,23 @@ namespace WebApiTest.Controllers
             return subCategoryDTOs;
         }
 
-        //[Authorize]
+        [HttpGet("categoryId/{id:int}")]
+        public List<GetSubCategoryDTO> GetSubCategoriesByCategoryId(int id)
+        {
+            List<SubCategory> subCategories = _subCategoryService.GetSubCategoriesByCategoryId(id);
+
+            List<GetSubCategoryDTO> subCategoryDTOs = subCategories.Select(subCategory => new GetSubCategoryDTO
+            {
+                Id = subCategory.Id,
+                CategoryId = subCategory.CategoryId,
+                Name = subCategory.Name
+            }).ToList();
+
+            return subCategoryDTOs;
+        }
+
+
+
         [HttpGet("getByName/{name:alpha}")]
         public SubCategory GetSubCategory(string name)
         {
@@ -52,13 +67,12 @@ namespace WebApiTest.Controllers
             return subCategory;
         }
 
-        //[Authorize]
         [HttpGet("getById/{id:int}")]
         public SubCategory GetSubCategory(int id)
         {
             var subCategory = _subCategoryService.GetElementById(id);
 
-            if (subCategory == null)    
+            if (subCategory == null)
             {
                 throw new Exception("NotFound");
             }
@@ -66,7 +80,19 @@ namespace WebApiTest.Controllers
             return subCategory;
         }
 
-        //[Authorize]
+        [HttpGet("getNameById/{id:int}")]
+        public string GetSubCategoryName(int id)
+        {
+            var subCategory = _subCategoryService.GetElementById(id);
+
+            if (subCategory == null)
+            {
+                throw new Exception("NotFound");
+            }
+
+            return subCategory.Name;
+        }
+
         [HttpPut("update")]
         public async Task<IActionResult> UpdateSubCategory(GetSubCategoryDTO dto)
         {
@@ -92,7 +118,6 @@ namespace WebApiTest.Controllers
             }
         }
 
-        //[Authorize]
         [HttpPost("addsubcategory")]
         public async Task<ActionResult<AddSubCategoryDTO>> AddSubCategory(AddSubCategoryDTO subCategory)
         {
@@ -105,7 +130,6 @@ namespace WebApiTest.Controllers
             return subCategory;
         }
 
-        //[Authorize]
         [HttpDelete("deleteByName/{name:alpha}")]
         public async Task<IActionResult> DeleteSubCategory(string name)
         {
@@ -120,7 +144,6 @@ namespace WebApiTest.Controllers
             return Ok("Sub Category deleted successfully");
         }
 
-        //[Authorize]
         [HttpDelete("deleteById/{id:int}")]
         public async Task<IActionResult> DeleteSubCategory(int id)
         {

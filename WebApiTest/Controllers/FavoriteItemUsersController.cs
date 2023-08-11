@@ -1,123 +1,112 @@
-﻿//using System;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Threading.Tasks;
-//using Microsoft.AspNetCore.Http;
-//using Microsoft.AspNetCore.Mvc;
-//using Microsoft.EntityFrameworkCore;
-//using WebApiTest.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using BusinessLayer.Abstract;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using EntityLayer.Concrete;
+using BusinessLayer.Abstract;
+using EntityLayer.DTOs;
 
-//namespace WebApiTest.Controllers
-//{
-//    [Route("api/[controller]")]
-//    [ApiController]
-//    public class FavoriteItemUsersController : ControllerBase
-//    {
-//        private readonly AppDbContext _context;
 
-//        public FavoriteItemUsersController(AppDbContext context)
-//        {
-//            _context = context;
-//        }
 
-//        // GET: api/FavoriteItemUsers
-//        [HttpGet]
-//        public async Task<ActionResult<IEnumerable<FavoriteItemUser>>> GetFavoriteItemUsers()
-//        {
-//          if (_context.FavoriteItemUsers == null)
-//          {
-//              return NotFound();
-//          }
-//            return await _context.FavoriteItemUsers.ToListAsync();
-//        }
+namespace WebApiTest.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    public class FavoriteItemUsersController : ControllerBase
+    {
+        private readonly IFavoriteItemUserService _favoriteItemUserService;
 
-//        // GET: api/FavoriteItemUsers/5
-//        [HttpGet("{id}")]
-//        public async Task<ActionResult<FavoriteItemUser>> GetFavoriteItemUser(int id)
-//        {
-//          if (_context.FavoriteItemUsers == null)
-//          {
-//              return NotFound();
-//          }
-//            var favoriteItemUser = await _context.FavoriteItemUsers.FindAsync(id);
 
-//            if (favoriteItemUser == null)
-//            {
-//                return NotFound();
-//            }
+        public FavoriteItemUsersController(IFavoriteItemUserService favoriteItemUserService)
+        {
+            _favoriteItemUserService = favoriteItemUserService;
+        }
 
-//            return favoriteItemUser;
-//        }
+        [HttpPost("addfavoriteitemuser")]
+        public async Task<ActionResult<DefaultFavoriteItemUserDTO>> AddFavoriteItemUser(DefaultFavoriteItemUserDTO favoriteItemUser)
+        {
+            _favoriteItemUserService.Insert(new FavoriteItemUser()
+            {
 
-//        // PUT: api/FavoriteItemUsers/5
-//        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-//        [HttpPut("{id}")]
-//        public async Task<IActionResult> PutFavoriteItemUser(int id, FavoriteItemUser favoriteItemUser)
-//        {
-//            if (id != favoriteItemUser.Id)
-//            {
-//                return BadRequest();
-//            }
+                UserId = favoriteItemUser.UserId,
+                ItemId = favoriteItemUser.ItemId,
 
-//            _context.Entry(favoriteItemUser).State = EntityState.Modified;
+            });
 
-//            try
-//            {
-//                await _context.SaveChangesAsync();
-//            }
-//            catch (DbUpdateConcurrencyException)
-//            {
-//                if (!FavoriteItemUserExists(id))
-//                {
-//                    return NotFound();
-//                }
-//                else
-//                {
-//                    throw;
-//                }
-//            }
+            return favoriteItemUser;
+        }
 
-//            return NoContent();
-//        }
+        [HttpPost("delete")]
+        public async Task<IActionResult> DeleteFavoriteItemUser(DefaultFavoriteItemUserDTO dto)
+        {
+            var favoriteItemUser = _favoriteItemUserService.GetListAll().Where(x => x.ItemId == dto.ItemId && x.UserId == dto.UserId);
 
-//        // POST: api/FavoriteItemUsers
-//        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-//        [HttpPost]
-//        public async Task<ActionResult<FavoriteItemUser>> PostFavoriteItemUser(FavoriteItemUser favoriteItemUser)
-//        {
-//          if (_context.FavoriteItemUsers == null)
-//          {
-//              return Problem("Entity set 'AppDbContext.FavoriteItemUsers'  is null.");
-//          }
-//            _context.FavoriteItemUsers.Add(favoriteItemUser);
-//            await _context.SaveChangesAsync();
+            if (favoriteItemUser == null)
+            {
+                return NotFound();
+            }
 
-//            return CreatedAtAction("GetFavoriteItemUser", new { id = favoriteItemUser.Id }, favoriteItemUser);
-//        }
+            var deletedFavoriteItem = favoriteItemUser.First();
 
-//        // DELETE: api/FavoriteItemUsers/5
-//        [HttpDelete("{id}")]
-//        public async Task<IActionResult> DeleteFavoriteItemUser(int id)
-//        {
-//            if (_context.FavoriteItemUsers == null)
-//            {
-//                return NotFound();
-//            }
-//            var favoriteItemUser = await _context.FavoriteItemUsers.FindAsync(id);
-//            if (favoriteItemUser == null)
-//            {
-//                return NotFound();
-//            }
+            _favoriteItemUserService.Delete(deletedFavoriteItem);
 
-//            _context.FavoriteItemUsers.Remove(favoriteItemUser);
-//            await _context.SaveChangesAsync();
+            return Ok("FavoriteItemUser deleted successfully");
+        }
 
-//            return NoContent();
-//        }
 
-//        private bool FavoriteItemUserExists(int id)
-//        {
-//            return (_context.FavoriteItemUsers?.Any(e => e.Id == id)).GetValueOrDefault();
-//        }
-//    }
-//}
+        //[Authorize]
+        [HttpGet("get")]
+        public FavoriteItemUser GetFavoriteItemUser(int id)
+        {
+            var favoriteItemUser = _favoriteItemUserService.GetElementById(id);
+
+            if (favoriteItemUser == null)
+            {
+                throw new Exception("NotFound");
+            }
+
+            return favoriteItemUser;
+        }
+
+        [HttpGet("getByUserId")]
+        public List<GetFavoriteItemUserDTO> GetFavoriteItemUsersByUserId(int userId)
+        {
+            var favoriteItemUsers = _favoriteItemUserService.GetListAll().Where(x=> x.UserId == userId);
+
+            List<GetFavoriteItemUserDTO> favoriteItemUsersDTOs = favoriteItemUsers.Select(favoriteItemUser => new GetFavoriteItemUserDTO
+            {
+                Id = favoriteItemUser.Id,
+                ItemId = favoriteItemUser.ItemId,
+                UserId = favoriteItemUser.UserId,
+
+            }).ToList();
+
+            return favoriteItemUsersDTOs;
+        }
+
+
+        // [Authorize]
+        [HttpGet]
+        public List<GetFavoriteItemUserDTO> GetAllFavoriteItemUsers()
+        {
+            List<FavoriteItemUser> favoriteItemUsers = _favoriteItemUserService.GetListAll();
+
+            List<GetFavoriteItemUserDTO> favoriteItemUsersDTOs = favoriteItemUsers.Select(favoriteItemUser => new GetFavoriteItemUserDTO
+            {
+                Id = favoriteItemUser.Id,
+                ItemId = favoriteItemUser.ItemId,
+                UserId = favoriteItemUser.UserId,
+
+
+
+            }).ToList();
+
+            return favoriteItemUsersDTOs;
+        }
+
+    }
+}

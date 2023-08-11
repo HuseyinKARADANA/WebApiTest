@@ -24,7 +24,6 @@ namespace WebApiTest.Controllers
             _categoryService = categoryService;
         }
 
-        //[Authorize]
         [HttpGet]
         public List<GetCategoryDTO> GetAllCategories()
         {
@@ -39,7 +38,6 @@ namespace WebApiTest.Controllers
             return categoryDTOs;
         }
 
-        //[Authorize]
         [HttpGet("getByName/{name:alpha}")]
         public Category GetCategory(string name)
         {
@@ -53,7 +51,6 @@ namespace WebApiTest.Controllers
             return category;
         }
 
-        //[Authorize]
         [HttpGet("getById/{id:int}")]
         public Category GetCategory(int id)
         {
@@ -67,7 +64,19 @@ namespace WebApiTest.Controllers
             return category;
         }
 
-        //[Authorize]
+        [HttpGet("getNameById/{id:int}")]
+        public string GetCategoryName(int id)
+        {
+            var category = _categoryService.GetElementById(id);
+
+            if (category == null)
+            {
+                throw new Exception("NotFound");
+            }
+
+            return category.Name;
+        }
+
         [HttpPut("update")]
         public async Task<IActionResult> UpdateCategory(GetCategoryDTO dto)
         {
@@ -92,8 +101,7 @@ namespace WebApiTest.Controllers
             }
         }
 
-        //[Authorize]
-        [HttpPost("addcategory")]
+        [HttpPost("addCategory")]
         public async Task<ActionResult<AddCategoryDTO>> AddCategory(AddCategoryDTO category)
         {
             _categoryService.Insert(new Category()
@@ -104,7 +112,6 @@ namespace WebApiTest.Controllers
             return category;
         }
 
-        //[Authorize]
         [HttpDelete("deleteByName/{name:alpha}")]
         public async Task<IActionResult> DeleteCategory(string name)
         {
@@ -119,7 +126,6 @@ namespace WebApiTest.Controllers
             return Ok("Category deleted successfully");
         }
 
-        //[Authorize]
         [HttpDelete("delete/{id:int}")]
         public async Task<IActionResult> DeleteCategory(int id)
         {

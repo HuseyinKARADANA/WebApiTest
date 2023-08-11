@@ -8,7 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="MailKit" Version="4.1.0" />
+    <PackageReference Include="Microsoft.AspNet.WebPages" Version="3.2.9" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Cookies" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.20" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="7.0.9" />
@@ -25,6 +27,8 @@
   <ItemGroup>
 
     <ProjectReference Include="..\..\ShoppingListNKatmanli\BusinessLayer\BusinessLayer.csproj" />
+
+    <ProjectReference Include="..\..\ShoppingListNKatmanli\DataAccessLayer\DataAccessLayer.csproj" />
     <ProjectReference Include="..\..\ShoppingListNKatmanli\EntityLayer\EntityLayer.csproj" />
   </ItemGroup>
 

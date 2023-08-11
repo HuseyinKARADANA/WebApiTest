@@ -12,6 +12,7 @@ using Autofac.Core;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -38,6 +39,26 @@ builder.Services.ConfigureSubCategoryDal();
 //CategoryDetail dependency injection
 builder.Services.ConfigureCategoryDetailManager();
 builder.Services.ConfigureCategoryDetailDal();
+
+//Item dependency injection
+builder.Services.ConfigureItemManager();
+builder.Services.ConfigureItemDal();
+
+//Order dependency injection
+builder.Services.ConfigureOrderManager();
+builder.Services.ConfigureOrderDal();
+
+//OrderDetail dependency injection
+builder.Services.ConfigureOrderDetailManager();
+builder.Services.ConfigureOrderDetailDal();
+
+//Reminder dependency injection
+builder.Services.ConfigureReminderManager();
+builder.Services.ConfigureReminderDal();
+
+//FavoriteItemUser Dependency Injection
+builder.Services.ConfigureFavoriteItemUserManager();
+builder.Services.ConfigureFavoriteItemUserDal();
 
 
 //builder.Services.AddAuthentication(options =>
@@ -83,6 +104,11 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddEndpointsApiExplorer(); 
 builder.Logging.ClearProviders();
 
+builder.Services.AddCors(p => p.AddPolicy("corspolicy", build =>//CORS 
+{
+    build.WithOrigins("https://localhost:7264").AllowAnyMethod().AllowAnyHeader();
+}));
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -91,6 +117,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors("corspolicy");//CORS
 
 app.UseHttpsRedirection();
 
