@@ -25,7 +25,6 @@ namespace WebApiTest.Controllers
             _addressService = addressService;
         }
 
-       // [Authorize]
         [HttpGet]
         public List<GetAddressDTO> GetAllAddresses()
         {
@@ -34,6 +33,7 @@ namespace WebApiTest.Controllers
             List<GetAddressDTO> addressDTOs = addresses.Select(address => new GetAddressDTO
             {
                 Id = address.Id,
+                UserID = address.UserId,
                 AddressName = address.AddressName,
                 CountryName = address.CountryName,
                 CityName = address.CityName,
@@ -46,7 +46,35 @@ namespace WebApiTest.Controllers
             return addressDTOs;
         }
 
-        //[Authorize]
+        [HttpGet("getAddressesByUserId")]
+        public List<Address> GetAddressesByUserId(int userId)
+        {
+            List<Address> addresses = _addressService.GetAddressesByUserId(userId);
+
+            List<Address> addressByUserId = addresses.Select(address => new Address
+            {
+                Id = address.Id,
+                UserId = address.UserId,
+                AddressName = address.AddressName,
+                CountryName = address.CountryName,
+                CityName = address.CityName,
+                TownName = address.TownName,
+                DistrictName = address.DistrictName,
+                PostCode = address.PostCode,
+                AddressText = address.AddressText
+            }).ToList();
+
+            return addressByUserId;
+        }
+
+        [HttpGet("getFirstAddressByUserId")]
+        public Address GetFirstAddressByUserId(int userId)
+        {
+            Address address = _addressService.GetFirstAddressByUserId(userId);
+
+            return address;
+        }
+
         [HttpGet("get")]
         public Address GetAddress( int id)
         {
@@ -91,12 +119,12 @@ namespace WebApiTest.Controllers
             }
         }
 
-        //[Authorize]
         [HttpPost("addaddress")]
         public async Task<ActionResult<DefaultAddressDTO>> AddAddress(DefaultAddressDTO address)
         {
             _addressService.Insert(new Address()
             {
+                UserId = address.UserID,
                 AddressName = address.AddressName,
                 CountryName = address.CountryName,
                 CityName = address.CityName,
@@ -109,7 +137,6 @@ namespace WebApiTest.Controllers
             return address;
         }
 
-       // [Authorize]
         [HttpDelete("delete")]
         public async Task<IActionResult> DeleteAddress(int addressID)
         {

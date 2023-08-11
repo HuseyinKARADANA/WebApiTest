@@ -19,6 +19,11 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using Humanizer;
 using System.Security.Cryptography;
+using System.Web.Helpers;
+using System.Text.Json;
+using Newtonsoft.Json;
+using DataAccessLayer.Security;
+using Azure.Core;
 
 namespace WebApiTest.Controllers
 {
@@ -38,16 +43,14 @@ namespace WebApiTest.Controllers
 
         }
 
-        [Authorize]
         [HttpGet]
         public List<User> GetAllUsers()
         {
             return _userService.GetListAll();
         }
 
-        [Authorize]
-        [HttpPost("{id:int}")]
-        public User GetUser([FromBody]int id)
+        [HttpGet("getUserById")]
+        public User GetUser(int id)
         {
           var user = _userService.GetElementById(id);
 
@@ -59,52 +62,66 @@ namespace WebApiTest.Controllers
             return user;
         }
 
-        [Authorize]
-        [HttpGet("logout")]
-        public async Task<IActionResult> LogOut ()
+        [HttpPost("getUserIdByEmail")]
+        public string GetUserIdByEmail(JustMailDTO dto)
         {
-            HttpContext.Response.Cookies.Delete("access_token");
-            //await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return Ok("Signed out successfully");
-        }
+            var user = _userService.GetUserByEmail(dto.Email);
 
-        [AllowAnonymous]
-        [HttpPost("login")]
-        public async Task<ActionResult> Login(LoginDTO dto)
-        {
-            if(_userService.Login(dto.Email,dto.Password))
+            if (user == null)
             {
-                var token = GenerateAccessToken(dto);
-
-                // Set the access token as a cookie in the response
-                HttpContext.Response.Cookies.Append("access_token", token, new CookieOptions
-                {
-                    Expires = DateTimeOffset.UtcNow.AddHours(3),
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict
-                });
-
-                return Ok(new { message = "Login successful." });
+                throw new Exception("NotFound");
             }
 
-            //var claims = new List<Claim>
-            //{
-            //    new Claim(ClaimTypes.Name, dto.ToString()),
-            //    new Claim(ClaimTypes.Role, "User")
-            //};
+            return user.Id.ToString();
+        }
 
-            //var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            //var authProperties = new AuthenticationProperties();
-            //await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity), authProperties);
+        [HttpPost("{email}/{password}")]
+        public User GetUserByEmailAndPassword(string email, string password)
+        {
+            var user = _userService.GetUserByEmailAndPassword(email,password);
 
-            //return dto;
+            if (user == null)
+            {
+                throw new Exception("NotFound");
+            }
 
-            return NotFound();
+            return user;
+        }
+
+        [HttpPost("login")]
+        public async Task<TokenDTO> Login(LoginDTO dto)
+        {
+            TokenDTO model = new();
+            JwtSecurityToken token = new();
+            UserDTO userDTO = new UserDTO();
+
+            if (_userService.Login(dto.Email, dto.Password))
+            {
+                var user = _userService.GetUserByEmailAndPassword(dto.Email, dto.Password);
+
+                userDTO = user;
+
+                token = GenerateAccessToken(userDTO);
+
+            }
+
+            var a = TokenSecurity.JwtToken(userDTO, "access_token", "ShopListAPP");
+            model.Token = a[0].ToString();
+            model.TokenExpire = a[1].ToString();
+
+            return model;
+        }
+
+        [HttpGet("current")]
+        public async Task<IActionResult> getLoggedInUserID()
+        {
+            var accessToken = HttpContext.Request.Cookies["access_token"];
+
+            return Ok(accessToken);
         }
 
         [NonAction]
-        private static string Generate128BitKey()
+        public static string Generate128BitKey()
         {
             // Generate 16 bytes (128 bits) of random data
             byte[] randomBytes = new byte[16];
@@ -122,7 +139,7 @@ namespace WebApiTest.Controllers
  
 
         [NonAction]
-        private string GenerateAccessToken(LoginDTO dto)
+        private JwtSecurityToken GenerateAccessToken(UserDTO userDTO)
         {
             // Replace this with your actual token generation login
             string coded = Generate128BitKey();
@@ -130,52 +147,85 @@ namespace WebApiTest.Controllers
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var claims = new[]
             {
-            new Claim(ClaimTypes.Name, dto.ToString()),
+            new Claim(ClaimTypes.NameIdentifier, userDTO.Id.ToString()),
+            new Claim(ClaimTypes.Name, userDTO.UserName),
+            new Claim(ClaimTypes.Name, userDTO.Password),
+            new Claim(ClaimTypes.Name, userDTO.Name),
+            new Claim(ClaimTypes.Name, userDTO.Surname),
+            new Claim(ClaimTypes.Email, userDTO.Email),
+            new Claim(ClaimTypes.Gender, userDTO.Gender.ToString()),
+            new Claim(ClaimTypes.DateOfBirth, userDTO.BirthDate.ToString()),
+            new Claim(ClaimTypes.Name, userDTO.RegisterDate.ToString()),
+            new Claim(ClaimTypes.MobilePhone, userDTO.PhoneNumber.ToString()),
             new Claim(ClaimTypes.Role, "User")
-        };
+            };
 
             var token = new JwtSecurityToken(
                 _configuration["Jwt:Issuer"],
                 _configuration["Jwt:Audience"],
                 claims,
-                expires: DateTime.Now.AddMinutes(30),
                 signingCredentials: creds
             );
 
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return token;
         }
 
-        //[HttpGet("ValidateLogin")]
-        //public bool ValidateLogin(string token)
-        //{
-        //    var signinKey = Generate128BitKey();
-        //    var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signinKey));
-        //    try
-        //    {
-        //        JwtSecurityTokenHandler handler = new();
-        //        handler.ValidateToken(token, new TokenValidationParameters()
-        //        {
-        //            ValidateIssuerSigningKey = true,
-        //            IssuerSigningKey = securityKey,
-        //            ValidateLifetime = true,
-        //            ValidateAudience = false,
-        //            ValidateIssuer = false,
-        //        }, out SecurityToken validatedToken);
-        //        var jwtToken = (JwtSecurityToken)validatedToken;
-        //        var claims = jwtToken.Claims.ToList();
-        //        return true;
+        [HttpPut("updateUserProfile")]
+        public async Task<IActionResult> UpdateUserProfile(UserProfileDTO dto)
+        {
+            if(ModelState.IsValid)
+            {
+                var userData = _userService.GetElementById(dto.Id);
+                if(userData == null)
+                {
+                    return NotFound();
+                }
+                userData.Name = dto.Name;
+                userData.Surname = dto.Surname; 
+                userData.PhoneNumber = dto.PhoneNumber;
+                userData.ProfilePhoto = dto.ProfilePhoto;
+                userData.UserName = dto.UserName;
+                _userService.Update(userData);
+                return Ok("User successfuly updated ");
+            }
+            else
+            {
+                return BadRequest("Invalid data provided.");
+            }
+        }
 
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return false;
-        //    }
-        //}
 
-        [AllowAnonymous]
+        [HttpPut("updatePassword")]
+        public async Task<IActionResult> UpdateUserPassword(ResetPasswordDTO dto)
+        {
+
+            if (ModelState.IsValid)
+            {
+                var userToPasswordUpdate = _userService.GetElementById(dto.Id);
+                if (userToPasswordUpdate == null)
+                {
+                    return NotFound();
+                }
+
+                userToPasswordUpdate.Password = dto.NewPassword;
+
+
+
+                _userService.Update(userToPasswordUpdate);
+
+                return Ok("User password successfully updated");
+            }
+            else
+            {
+                return BadRequest("Invalid data provided.");
+            }
+        }
+
         [HttpPost("register")]
         public async Task<ActionResult<RegisterDTO>> Register(RegisterDTO user)
         {
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(user.Password);
+
             _userService.Insert(new User()
             {
                 Name = user.Name,
@@ -186,26 +236,28 @@ namespace WebApiTest.Controllers
                 PhoneNumber = user.PhoneNumber,
                 RegisterDate = System.DateTime.Now,
                 UserName = user.UserName,
-                Password = user.Password
+                Password = hashedPassword,
+                IsActive = true
             });
 
             return user;
         }
 
-        [Authorize]
-        [HttpDelete("delete")]
-        public async Task<IActionResult> DeleteUser(string username)
+        [HttpDelete("delete/")]
+        public async Task<IActionResult> DeleteUser(int id)
         {
-            var user = _userService.GetElementByUsername(username);
+            var user = _userService.GetElementById(id);
             if (user == null)
             {
                 return NotFound();
             }
-
-            _userService.Delete(user);
+            user.IsActive = false;
+            _userService.Update(user);
 
             return Ok("User deleted successfully");
         }
+
+        
 
         //[Authorize]
         //[HttpPut("{id}")]

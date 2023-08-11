@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using DataAccessLayer.Abstract;
 using DataAccessLayer.Concrete.EntityFramework;
 
+
 namespace WebApiTest.Extensions
 {
     public static class ServicesExtensions
@@ -75,6 +76,65 @@ namespace WebApiTest.Extensions
         public static void ConfigureCategoryDetailDal(this IServiceCollection services)
         {
             services.AddScoped<ICategoryDetailDal, EfCategoryDetailDal>();
+        }
+
+        //Item Dependency Injection
+
+        public static void ConfigureItemManager(this IServiceCollection services)
+        {
+            services.AddScoped<IItemService, ItemManager>();
+        }
+
+        public static void ConfigureItemDal(this IServiceCollection services)
+        {
+            services.AddScoped<IItemDal, EfItemDal>();
+        }
+
+        //Orders Dependency Injection
+
+        public static void ConfigureOrderManager(this IServiceCollection services)
+        {
+            services.AddScoped<IOrderService, OrderManager>();
+        }
+
+        public static void ConfigureOrderDal(this IServiceCollection services)
+        {
+            services.AddScoped<IOrderDal, EfOrderDal>();
+        }
+
+        //OrderDetail Dependency Injection
+
+        public static void ConfigureOrderDetailManager(this IServiceCollection services)
+        {
+            services.AddScoped<IOrderDetailService, OrderDetailManager>();
+        }
+
+        public static void ConfigureOrderDetailDal(this IServiceCollection services)
+        {
+            services.AddScoped<IOrderDetailDal, EfOrderDetailDal>();
+        }
+
+        //Remainder Dependency Injection
+
+        public static void ConfigureReminderManager(this IServiceCollection services)
+        {
+            services.AddScoped<IReminderService, ReminderManager>();
+        }
+
+        public static void ConfigureReminderDal(this IServiceCollection services)
+        {
+            services.AddScoped<IReminderDal, EfReminderDal>();
+        }
+
+        //FavoriteItemUser Dependency Injection
+        public static void ConfigureFavoriteItemUserManager(this IServiceCollection services)
+        {
+            services.AddScoped<IFavoriteItemUserService, FavoriteItemUserManager>();
+        }
+
+        public static void ConfigureFavoriteItemUserDal(this IServiceCollection services)
+        {
+            services.AddScoped<IFavoriteItemUserDal, EfFavoriteItemUserDal>();
         }
     }
 }

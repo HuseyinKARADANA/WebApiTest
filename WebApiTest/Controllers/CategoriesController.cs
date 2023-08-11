@@ -24,7 +24,6 @@ namespace WebApiTest.Controllers
             _categoryService = categoryService;
         }
 
-        //[Authorize]
         [HttpGet]
         public List<GetCategoryDTO> GetAllCategories()
         {
@@ -32,14 +31,14 @@ namespace WebApiTest.Controllers
 
             List<GetCategoryDTO> categoryDTOs = categories.Select(category => new GetCategoryDTO
             {
+                Id = category.Id,
                 Name = category.Name
             }).ToList();
 
             return categoryDTOs;
         }
 
-        //[Authorize]
-        [HttpGet("get")]
+        [HttpGet("getByName/{name:alpha}")]
         public Category GetCategory(string name)
         {
             var category = _categoryService.GetCategoryByName(name);
@@ -52,7 +51,32 @@ namespace WebApiTest.Controllers
             return category;
         }
 
-        //[Authorize]
+        [HttpGet("getById/{id:int}")]
+        public Category GetCategory(int id)
+        {
+            var category = _categoryService.GetElementById(id);
+
+            if (category == null)
+            {
+                throw new Exception("NotFound");
+            }
+
+            return category;
+        }
+
+        [HttpGet("getNameById/{id:int}")]
+        public string GetCategoryName(int id)
+        {
+            var category = _categoryService.GetElementById(id);
+
+            if (category == null)
+            {
+                throw new Exception("NotFound");
+            }
+
+            return category.Name;
+        }
+
         [HttpPut("update")]
         public async Task<IActionResult> UpdateCategory(GetCategoryDTO dto)
         {
@@ -77,9 +101,8 @@ namespace WebApiTest.Controllers
             }
         }
 
-        //[Authorize]
-        [HttpPost("addcategory")]
-        public async Task<ActionResult<GetCategoryDTO>> AddCategory(GetCategoryDTO category)
+        [HttpPost("addCategory")]
+        public async Task<ActionResult<AddCategoryDTO>> AddCategory(AddCategoryDTO category)
         {
             _categoryService.Insert(new Category()
             {
@@ -89,11 +112,10 @@ namespace WebApiTest.Controllers
             return category;
         }
 
-        //[Authorize]
-        [HttpDelete("delete")]
-        public async Task<IActionResult> DeleteCategory(string categoryName)
+        [HttpDelete("deleteByName/{name:alpha}")]
+        public async Task<IActionResult> DeleteCategory(string name)
         {
-            var category = _categoryService.GetCategoryByName(categoryName);
+            var category = _categoryService.GetCategoryByName(name);
             if (category == null)
             {
                 return NotFound();
@@ -104,9 +126,28 @@ namespace WebApiTest.Controllers
             return Ok("Category deleted successfully");
         }
 
+        [HttpDelete("delete/{id:int}")]
+        public async Task<IActionResult> DeleteCategory(int id)
+        {
+            var category = _categoryService.GetElementById(id);
+            if (category == null)
+            {
+                return NotFound();
+            }
+
+            _categoryService.Delete(category);
+
+            return Ok("Category deleted successfully");
+        }
         private bool CategoryExists(string name)
         {
             var category = _categoryService.GetCategoryByName(name);
+
+            return category != null;
+        }
+        private bool CategoryExists(int id)
+        {
+            var category = _categoryService.GetElementById(id);
 
             return category != null;
         }
